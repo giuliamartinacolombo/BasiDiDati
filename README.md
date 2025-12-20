@@ -116,5 +116,35 @@ La descrizione dettagliata di endpoint, parametri, risposte e query SQL è conte
 
 ## 📑 Documentazione Swagger
 
-La documentazione interattiva delle API è disponibile all’indirizzo:
+Il server sarà disponibile su: http://localhost:3000
+La configurazione Swagger è generata automaticamente tramite `swagger-autogen`.
 
+---
+
+## ▶️ Avvio del progetto
+
+### Prerequisiti
+- Node.js (versione ≥ 18)
+- PostgreSQL
+- Database PostgreSQL denominato `Fotogram`
+
+### Installazione dipendenze
+```bash
+npm install
+```
+
+### Avvio del server
+```bash
+node index.js
+```
+
+## 📦 Dipendenze principali
+- express
+- pg
+- jsonwebtoken
+- express-fileupload
+- swagger-ui-express
+- swagger-autogen
+
+## 📄 Licenza
+Questo progetto è distribuito sotto licenza MIT.
