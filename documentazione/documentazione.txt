@@ -1,0 +1,1717 @@
+DOCUMENTAZIONE PER IL PROGETTO "FOTOGRAM"
+
+	• Studentessa: Giulia Martina Colombo
+	• Matricola: 42601A
+
+
+================================
+   PROGETTAZIONE CONCETTUALE
+================================
+
+
+====== DIZIONARIO DELLE ENTITA' ======
+
+Entità: UTENTE
+Descrizione: Persona registrata alla piattaforma, abilitata a creare contenuti, interagire con altri utenti e usufruire delle funzionalità del social network.
+Attributi: username, mail, password, foto
+Identificatore: username
+
+Entità: AMMINISTRATORE
+Descrizione: Utente con i massimi privilegi sulla piattaforma, responsabile della gestione generale del sistema, della configurazione e dell’assegnazione dei ruoli, incluso il conferimento di poteri ai moderatori.
+Attributi [da UTENTE]: username, mail, password, foto
+Attributi: //
+Identificatore: username
+
+Entità: MODERATORE
+Descrizione: Utente con permessi forniti dall’amministratore, incaricato di supervisionare i contenuti e le interazioni tra utenti per garantire il rispetto delle regole del social.
+Attributi [da UTENTE]: username, mail, password, foto
+Attributi: data_nomina
+Identificatore: username
+
+Entità: POST
+Descrizione: Contenuto pubblicato da un utente, composto da un messaggio testuale oppure da un’immagine, visibile nella bacheca del social.
+Attributi: id_post, stato, creazione (data, ora), num_flag, immagine_utente, username_utente
+Identificatore: id_post
+
+Entità: POST_IMMAGINE
+Descrizione: Contenuto pubblicato da un utente, composto da un’immagine, visibile nella bacheca del social.
+Attributi [da POST]: id_post, stato, creazione (data, ora), num_flag, immagine_utente, username_utente
+Attributi: immagine
+Identificatore: id_post
+
+Entità: POST_TESTUALE
+Descrizione: Contenuto pubblicato da un utente, composto da un messaggio testuale, visibile nella bacheca del social.
+Attributi [da POST]: id_post, stato, creazione (data, ora), num_flag
+ immagine_utente, username_utente
+Attributi: testo
+Identificatore: id_post
+
+Entità: LOGIN 
+Descrizione: Procedura che consente all’utente di autenticarsi per accedere alle funzionalità del social. Questo permette di dare inizio ad una sessione.
+Attributi: id_sessione, inizio_sessione, fine_sessione
+Identificatore: id_sessione
+
+
+
+====== DIZIONARIO DELLE RELAZIONI ======
+
+Relazione: SEGUITO
+Descrizione: Relazione asimmetrica e ricorsiva in cui un utente può seguire altri utenti senza essere necessariamente seguito a sua volta.
+Componenti: Utente-Utente
+Attributi: //
+
+Relazione: NOMINATO
+Descrizione: Un amministratore conferisce a un utente il ruolo di moderatore.
+Componenti: Amministratore-Moderatore
+Attributi: //
+
+Relazione: PUBBLICATO
+Descrizione: Relazione tra un utente e i post da lui creati, che ne identifica l'autore e collega ogni post al suo creatore.
+Componenti: Utente-Post
+Attributi: //
+
+Relazione: LIKE
+Descrizione: Un utente esprime un apprezzamento per un post, con la possibilità di aggiungere o rimuovere il like.
+Componenti: Utente-Post
+Attributi: //
+
+Relazione: FLAG
+Descrizione: Segnalazione di un post da parte di un utente come inappropriato; può essere vista e gestita solo dall’utente che ha segnalato e dai moderatori.
+Componenti: Utente-Post
+Attributi: //
+
+Relazione: MODERATORE_MODERATO
+Descrizione: Un moderatore ha giudicato un post inappropriato e lo ha quindi moderato; i post moderati sono visibili solo ai moderatori.
+Componenti: Moderatore-Post
+Attributi: data_moderazione
+
+Relazione: AMMINISTRATORE_MODERATO
+Descrizione: Un amministratore ha giudicato un post inappropriato e lo ha quindi moderato; i post moderati sono visibili solo ai moderatori
+Componenti: Amministratore-Post
+Attributi: data_moderazione
+
+Relazione: EFFETTUATO
+Descrizione: Un utente ha eseguito l’accesso tramite login al sistema.
+Componenti: Login-Utente
+Attributi: //
+
+
+
+====== VINCOLI DI INTEGRITA' SUI DATI ======
+
+1) Durante la registrazione, non è possibile utilizzare una mail o uno username già utilizzati
+2) Un'immagine di profilo deve essere di dimensioni di massimo 100KB
+3) L'utente deve essere collegato (effettuare login) per usare le funzionalità del sistema
+4) Per poter effettuare il login, lo username e la password devono essere corretti (quindi coerenti con quelli inseriti durante la registrazione)
+5) Un post può contenere un'immagine di massimo 100KB
+6) Un utente può mettere like ad un post una sola volta
+7) Un utente può mettere un flag ad un post una sola volta
+8) Un utente che ha almeno 3 post moderati nell'arco di 30 giorni non può creare nuovi post
+9) Un post può essere moderato una sola volta, esclusivamente da un moderatore o da un amministratore (non da entrambi)
+10) Un utente può avere al massimo una sessione attiva alla volta
+11) Un utente non può seguire sé stesso
+
+
+
+====== SCELTE EFFETTUATE ======
+
+UTENTE
+L’attributo foto è modellato come opzionale (0,1), in quanto l’utente non è obbligato a impostare un’immagine di profilo.
+La relazione SEGUITO è stata modellata come ricorsiva sull’entità UTENTE poiché coinvolge due utenti distinti della stessa entità: uno che segue (follower) e uno che è seguito (followed).
+La cardinalità è (0,N) su entrambi i lati:
+- ogni utente può seguire zero o più utenti
+- ogni utente può essere seguito da zero o più utenti
+Questa modellazione è tipica dei social come Twitter, dove il follow non è simmetrico né obbligatoriamente ricambiato.
+Le entità MODERATORE e AMMINISTRATORE sono modellate come specializzazioni dell’entità UTENTE, attraverso una gerarchia parziale ed esclusiva (indicata con p.e. nel diagramma):
+- parziale perché un utente può anche non appartenere a nessuna sottoclasse (utente base)
+- esclusiva perché ogni istanza può appartenere al massimo a una sola sottoclasse e quindi un utente non può essere contemporaneamente moderatore e amministratore. 
+Gli attributi comuni (username, mail, password, foto) sono definiti nella superclasse UTENTE, mentre gli attributi specifici, come data_nomina, sono collocati nelle sottoclassi. 
+Sebbene moderatori e amministratori abbiano entrambi il potere di moderare i post ritenuti inappropriati, ho deciso di distinguere le due entità per evidenziare la differenza nei ruoli e nelle responsabilità operative. Per questo motivo, ho creato due relazioni distinte: MODERATORE_MODERATO tra MODERATORE e POST, e AMMINISTRATORE_MODERATO tra AMMINISTRATORE e POST. Questa scelta mi consente di tracciare con precisione chi ha moderato un post, distinguendo se l’azione è stata eseguita da un moderatore o da un amministratore. Anche se le azioni sono simili, è importante sapere chi le ha compiute, poiché si tratta di persone diverse con ruoli potenzialmente differenti nella gestione del social.
+Per entrambe le relazioni è stata scelta la cardinalità (0,1) sul lato POST e (0,N) sul lato MODERATORE o AMMINISTRATORE, con le seguenti motivazioni:
+- la cardinalità (0,1) sul lato POST indica che ogni post può essere moderato al massimo una volta, e da una sola figura (moderatore oppure amministratore).
+- la cardinalità (0,N) sul lato MODERATORE e AMMINISTRATORE consente a ciascun utente con ruolo di moderazione di intervenire su più post.
+L’entità LOGIN è stata introdotta per rappresentare in modo autonomo e strutturato le sessioni di accesso degli utenti. È collegata all’entità UTENTE tramite la relazione EFFETTUATO, con cardinalità:
+- (1,1) sul lato LOGIN → ogni sessione è effettuata da uno e un solo utente
+- (1,N) sul lato UTENTE → ogni utente può avere più sessioni nel tempo
+Questa scelta permette di tenere traccia degli accessi, di gestire i logout e di garantire la sicurezza e tracciabilità delle operazioni nel sistema. La presenza dell’attributo id_sessione consente di identificare in modo univoco ogni sessione di login (token).
+
+POST
+Per rappresentare correttamente il fatto che un post possa contenere solo un testo oppure solo un’immagine, ho modellato le entità POST_TESTO e POST_IMMAGINE come sottoclassi dell’entità POST. La gerarchia è di tipo totale ed esclusiva (total exclusive – t.e.), il che garantisce che ogni post appartenga esattamente a uno solo dei due tipi, rispettando il vincolo espresso nei requisiti ed evitando ambiguità.
+All’interno dell’entità POST ho incluso l’attributo stato per rappresentare lo stato corrente del contenuto nel sistema. I valori ammessi sono:
+- “non flaggato”
+- “flaggato”
+- “moderato”
+Anche se parte di queste informazioni può essere dedotta dalla presenza di relazioni come FLAG, MODERATORE_MODERATO e AMMINISTRATORE_MODERATO, ho scelto di mantenere l’attributo in questa fase della progettazione per ragioni di chiarezza semantica, facilità di accesso e per semplificare il processo di moderazione. Questo consente, ad esempio, ai moderatori di conoscere immediatamente lo stato del post senza dover navigare tra più relazioni.
+L’attributo creazione (rappresentato nel diagramma tramite data e ora) è stato inserito per registrare il momento esatto della pubblicazione del post. È fondamentale per ordinare cronologicamente i post nella bacheca.
+La relazione PUBBLICATO collega POST a UTENTE e rappresenta il legame tra il contenuto e il suo autore.
+Cardinalità scelta:
+- (1,1) sul lato POST → ogni post è pubblicato da esattamente un utente
+- (0,N) sul lato UTENTE → ogni utente può pubblicare zero o più post
+La relazione LIKE collega UTENTE e POST, rappresentando l’azione di mettere "mi piace".
+Cardinalità scelta:
+- (0,N) su entrambi i lati → un post può ricevere molti like da utenti diversi, e un utente può mettere like a molti post
+La relazione FLAG collega UTENTE e POST e rappresenta la possibilità per un utente di segnalare un contenuto inappropriato.
+Cardinalità scelta:
+- (0,N) su entrambi i lati → un post può essere flaggato da più utenti, e ogni utente può flaggare più post
+
+ALTRE SCELTE
+Non è stata inserita la lista di utenti ricercati come attributo poiché il risultato della ricerca è una vista dinamica dei dati, generata temporaneamente in base a un'azione dell'utente. Un attributo nel modello concettuale serve per informazioni permanenti e memorizzate, non per risultati temporanei di una query.
+Ho scelto di non utilizzare una relazione ternaria tra UTENTE, POST e MODERATORE per il flag, perché il processo di segnalazione di un post come inappropriato coinvolge solo l’utente che segnala e il post segnalato. Il moderatore non partecipa direttamente all’azione di flag, ma interviene successivamente per valutare i post segnalati. Per questo motivo, ho scelto di modellare FLAG come una relazione binaria tra UTENTE e POST, mentre la successiva azione del moderatore è gestita da una relazione separata MODERATO, tra MODERATORE e POST.
+Nel testo dei requisiti si parla di una lista di post flaggati visibile al moderatore, ordinata per numero di flag ricevuti. Questa "lista" è un meccanismo di visualizzazione a livello di funzionalità del sistema, non una nuova entità concettuale. La lista può essere ricavata dinamicamente interrogando il database sulle relazioni FLAG già presenti.
+
+
+
+====== RISTRUTTURAZIONE SCHEMA ER ======
+
+Eliminazione di costrutti non direttamente rappresentabili nel modello relazionale:
+
+1) Analisi delle ridondanze
+2) Eliminazione delle gerarchie
+3) Partizionamento/accorpamento di entità/relazioni
+4) Scelta degli identificatori primari 
+
+
+ANALISI DELLE RIDONDANZE
+Per l’analisi delle ridondanze, occorre individuare:
+- la presenza di attributi derivabili da altri attributi o associazioni
+- se esistono associazioni che possono essere ottenute attraverso altre associazioni 
+In questo caso, lo username dell’utente e l’immagine profilo dell’utente visibili in un post sono attributi derivabili da Utente e quindi ridondanti se riportati anche in Post.
+Nel mio modello ho deciso di aggiungere gli attributi num_like, num_follower e num_followed, pur essendo ridondanti rispetto alle rispettive relazioni (Like e Seguito), per motivi di efficienza. Questi dati vengono richiesti frequentemente dall’interfaccia utente (es. numero di like per post o numero di follower per profilo) e mantenerli come attributi consente di evitare il calcolo continuo di aggregazioni, migliorando le prestazioni del sistema. Naturalmente, sarà necessaria una logica di aggiornamento per garantire la coerenza con le relazioni sottostanti.
+Diversamente, ho deciso di non mantenere l’attributo num_flag associato ai post, in quanto le segnalazioni sono meno frequenti e generalmente non utilizzate per la visualizzazione immediata. Tuttavia, è presente una regola operativa secondo la quale un utente che ha almeno 3 post moderati negli ultimi 30 giorni non può più pubblicare. Per gestire questa regola, ho previsto l’inserimento di un attributo data_moderazione nella relazione Moderatore_moderato e Amministratore_moderato, in modo da poter effettuare dinamicamente il conteggio dei post moderati nel periodo desiderato, senza rendere necessario l’uso di un attributo ridondante nel modello.
+L'attributo stato nell’entità Post inizialmente era stato introdotto per rappresentare lo stato attuale del post, con valori come “flaggato”, “non flaggato” e “moderato”. Tuttavia, dopo aver analizzato il modello più nel dettaglio, ho riconosciuto che stato risulta ridondante. Infatti, lo stato del post può essere derivato direttamente dalle relazioni esistenti: la relazione flag indica se un post è stato flaggato, mentre la relazione Moderatore_moderato o Amministratore_moderato può determinare se un post è stato moderato. Pertanto, ho deciso di rimuovere l'attributo stato dal modello, in quanto non è più necessario mantenere esplicitamente questa informazione quando è già possibile ricavarlo dinamicamente dalle relazioni.
+
+
+ELIMINAZIONE DELLE GERARCHIE
+In questa fase, avviene l’accorpamento delle figlie nel genitore, quindi:
+Per quanto riguarda la gerarchia in Utente, ho scelto di sostituire la generalizzazione con delle relazioni perché il contesto prevede una generalizzazione parziale: non tutte le istanze della superclasse appartengono necessariamente a una sottoclasse. Questo approccio permette di rappresentare in modo più flessibile e chiaro l’appartenenza alle entità figlie, evitando ambiguità. Inoltre, facilita la gestione separata delle informazioni relative al genitore e alle sottoclassi, rendendo il modello più esplicito e aderente alla realtà del dominio.
+In Post, ho scelto di accorpare le entità figlie nella superclasse perché in questo contesto la generalizzazione è totale ed esclusiva, e gli accessi alle informazioni del genitore e delle sottoclassi avvengono quasi sempre in modo congiunto, all'interno della stessa operazione. Utilizzare un’unica entità consente di semplificare le interrogazioni e migliorando l'efficienza delle operazioni di accesso ai dati. 
+VINCOLO → l’attributo Type può avere solo i valori “Post_Immagine” o “Post_Testuale”.
+
+
+PARTIZIONAMENTO/ACCORPAMENTO DI ENTITÀ/RELAZIONI
+Alcune operazioni dipendono dall’analisi delle prestazioni:
+- Partizionamento di entità
+- Partizionamento di relationship
+- Accorpamento di entità / relationship
+Eliminazione di attributi composti:
+- Quali attributi composti ci sono?
+- Come li ristrutturiamo?
+Eliminazione di attributi multivalore:
+- Quali attributi multivalore ci sono?
+- Come li ristrutturiamo? 
+Ho deciso di scomporre l’attributo composto creazione in due attributi distinti, creazione_ora e creazione_data, perché la visualizzazione dei post nella bacheca avviene in ordine di creazione. Separare questi due dati rende più chiara e leggibile l’informazione, sia a livello di modellazione sia nell’interfaccia, facilitando l’interpretazione del momento in cui ogni post è stato pubblicato.
+
+
+SCELTA DEGLI IDENTIFICATORI PRINCIPALI
+id_post → Post
+id_sessione → Sessione
+username → Utente
+username → Moderatore (figlio di Utente)
+username → Amministratore (figlio di Utente)
+
+
+
+================================
+     PROGETTAZIONE LOGICA
+================================
+
+
+====== TRADUZIONE SCHEMA ER ======
+
+PK → Primary Key  
+FK → Foreign Key  
+*  → attributo che ammette valore nullo  
+U  → attributo soggetto a vincolo di unicità  
+
+Utente(username (PK),  mail (U), password, num_follower, num_followed, foto*)
+
+Seguito(username_follower (PK, FK), username_followed (PK, FK))
+FOREIGN KEY (username_follower) REFERENCES Utente(username)
+FOREIGN KEY (username_followed) REFERENCES Utente(username)
+
+Login(id_sessione (PK), inizio_sessione, fine_sessione*, username (FK))
+FOREIGN KEY (username) REFERENCES Utente(username)
+
+Like(id_post (PK, FK), username (PK, FK))
+PRIMARY KEY (id_post, username)
+FOREIGN KEY (id_post) REFERENCES Post(id_post),
+FOREIGN KEY (username) REFERENCES Utente(username)
+
+Flag(id_post (PK, FK), username (PK, FK))
+PRIMARY KEY (id_post, username)
+FOREIGN KEY (id_post) REFERENCES Post(id_post),
+FOREIGN KEY (username) REFERENCES Utente(username)
+
+Moderatore(username (PK, FK)), data_nomina, nominato_da (FK))
+FOREIGN KEY (username) REFERENCES Utente(username),
+FOREIGN KEY (nominato_da) REFERENCES Amministratore(username)
+
+Amministratore(username (PK, FK)),
+FOREIGN KEY (admin_username) REFERENCES Utente(username)
+
+Post( id_post (PK), num_like, immagine*, testo*, Type, creazione_data, creazione_ora, username (FK), mod_username* (FK), admin_username (FK), data_moderazione*)
+FOREIGN KEY (username) REFERENCES Utente(username),
+FOREIGN KEY (mod_username) REFERENCES Moderatore(username),
+FOREIGN KEY (admin_username) REFERENCES Amministratore(username)
+
+OSSERVAZIONI:
+È stata mantenuta un’unica colonna data_moderazione in Post per rappresentare la data in cui il post è stato moderato, indipendentemente dal fatto che la moderazione sia avvenuta da parte di un moderatore o di un amministratore. Questo evita ridondanze e semplifica lo schema, poiché un post può essere moderato al massimo una sola volta e da una sola figura (moderatore o amministratore)
+Inoltre, ho cambiato username con admin_username, mod_username, nominato_da per non avere due attributi con lo stesso nome nella stessa tabella.
+
+
+
+
+======================================================
+   PROGETTAZIONE DELLE API REST E DELLE QUERY SQL
+======================================================
+
+REGISTRAZIONE
+Metodo → POST 
+Endpoint → /registrazione
+Descrizione → consente la registrazione ad un nuovo utente
+Vincoli di accesso → pubblico (nessun token richiesto)
+
+Request body:
+{
+	“username”: “string”,
+	“mail”: “string”,
+	“password”: “string”
+}
+
+Risposte:
+201 Created
+{“message”: “Registrazione avvenuta con successo.”}
+
+400 Bad Request 
+{“error”: “Username o email già in uso.”}
+{“error”: “Parametri mancanti o non validi.”}
+
+500 Internal Server Error
+{“error”: “Errore nella query.”}
+{“error”: “Errore nella crittografia.”}
+
+Query SQL:
+//Verifica esistenza di un utente con stesso username o mail
+SELECT EXISTS (
+  SELECT *
+  FROM utente
+  WHERE username = ? OR mail = ?
+)
+
+//Inserimento del nuovo utente nella tabella UTENTE
+INSERT INTO Utente (username, mail, password, num_follower, num_followed)
+VALUES ($1, $2, $3, 0, 0)
+
+JS:
+Viene effettuata la validazione della presenza dei campi obbligatori (username, mail e password), il controllo del formato dell’email per verificarne la correttezza sintattica, e l’interpretazione del risultato della query che controlla l’unicità di username e mail. Se tali credenziali risultano già esistenti, la registrazione viene bloccata restituendo un errore al client. Infine, nel caso di registrazione valida, la password fornita viene crittografata direttamente in JavaScript prima di essere salvata nel database.
+
+
+
+
+LOGIN
+Metodo → POST
+Endpoint → /login
+Descrizione → Effettua il login di un utente registrato e genera un token JWT se le credenziali sono corrette
+Vincoli di accesso → Pubblico (nessun token richiesto)
+
+Request body:
+{
+	"username": "string",
+	"password": "string"
+}
+
+Risposte:
+200 OK
+{ "token": "jwt.token.firmato" }
+
+400 Bad Request
+{ "error": "Parametri mancanti." }
+
+401 Unauthorized
+{ "error": "Username o password errati." }
+
+409 Conflict
+{ "error": "Esiste già una sessione attiva per questo utente." }
+
+500 Internal Server Error
+{ "error": "Errore nella query." }
+{ "error": "Errore durante il controllo della sessione." }  
+{ "error": "Errore durante la registrazione della sessione." }
+
+Query SQL:
+//Verifica utente
+SELECT password
+FROM utente
+WHERE username = $1
+
+//Verifica sessione attiva
+SELECT 1
+FROM login
+WHERE username = $1 AND fine_sessione IS NULL
+LIMIT 1
+
+//Inserimento di una nuova sessione nella tabella LOGIN
+INSERT INTO login (id_sessione, inizio_sessione, username)
+VALUES ($1, CURRENT_TIMESTAMP, $2)
+
+JS:
+Si verifica la presenza dei campi username e password nella richiesta, si recuperano dalla base di dati l’hash e il salt associati all’utente e si utilizza crypto.scrypt per ricreare l’hash della password fornita, confrontandolo con quello salvato. Inoltre, viene verificata l’eventuale presenza di una sessione attiva per l’utente; in assenza di una sessione aperta, viene generato un token JWT con validità di un’ora. Il token viene salvato come identificativo della sessione nella tabella login. Infine, il token viene restituito al client come risposta. 
+
+
+
+
+LOGOUT
+Metodo → POST
+Endpoint → /logout
+Descrizione → Termina la sessione corrente dell’utente autenticato, aggiornando la fine della sessione nel database.
+Vincoli di accesso → Utente autenticato (token JWT presente e valido)
+
+Header:
+bearer → string
+
+Risposte:
+200 OK
+{ "message": "Logout effettuato con successo." }
+
+400 Bad Request
+{ "error": "Token mancante." }
+
+401 Unauthorized
+{ "error": "Token non valido." }
+{ "error": "Token scaduto. Esegui di nuovo il login." }
+
+500 Internal Server Error
+{ "error": "Errore durante il logout." }
+
+Query SQL:
+//Aggiorna il valore fine_sessione nella tabella LOGIN
+UPDATE login
+SET fine_sessione = CURRENT_TIMESTAMP
+WHERE id_sessione = $1 AND fine_sessione IS NULL
+
+JS:
+Il token JWT viene preso dall’header bearer della richiesta. Se non è presente, il server restituisce un errore 400. Se invece il token risulta scaduto o non è valido, viene restituito un errore 401. Quando il token viene confermato come valido, viene usato come identificativo della sessione attiva (id_sessione), così da poter aggiornare il campo fine_sessione e chiudere correttamente la sessione.
+
+
+
+
+MODIFICA MAIL E PASSWORD DEL PROFILO UTENTE
+Metodo → PATCH
+Endpoint → /profilo
+Descrizione → Consente di aggiornare la mail e/o la password dell’utente autenticato
+Vincoli di accesso → Utente autenticato (token JWT presente e valido)
+
+Header:
+bearer → string
+
+Request body:
+{
+	"mail": "string",       
+	"password": "string"   
+}
+
+(È possibile inviare uno solo dei due parametri o entrambi. Almeno uno deve essere presente)
+
+Risposte:
+200 OK
+{ "message": "Profilo aggiornato con successo." }
+{ "message": "Password aggiornata con successo." }
+{ "message": "Mail aggiornata con successo." }
+
+400 Bad Request
+{ "error": "Email non valida." }
+{ "error": "Password troppo corta." }
+{ "error": "Nessun dato fornito." }
+
+401 Unauthorized
+{ "error": "Token non valido." }
+{ "error": "Token scaduto. Esegui di nuovo il login." }
+
+500 Internal Server Error
+{ "error": "Errore nella query." }
+
+Query SQL:
+//Aggiorna il valore mail e password nella tabella LOGIN
+UPDATE utente
+SET mail = $1, password = $2
+WHERE username = $3
+
+//Aggiorna il valore password nella tabella LOGIN
+UPDATE utente
+SET password = $1
+WHERE username = $2
+
+//Aggiorna il valore mail nella tabella LOGIN
+UPDATE utente
+SET mail = $1
+WHERE username = $2
+
+JS:
+Nel processo di aggiornamento del profilo, la validazione dei parametri ricevuti (come mail e password) è gestita in JavaScript, verificando che abbiano un formato corretto e non siano vuoti. Se viene fornita una nuova password, è necessario criptarla utilizzando crypto.scrypt, operazione non eseguibile in SQL. Inoltre, il sistema determina dinamicamente quali aggiornamenti effettuare in base ai campi presenti nella richiesta e restituisce un messaggio personalizzato in funzione delle modifiche effettuate.
+
+
+
+
+AGGIORNAMENTO IMMAGINE PROFILO
+Metodo → POST
+Endpoint → /profilo/foto
+Descrizione → Consente di aggiornare la foto del profilo dell’utente autenticato.
+Vincoli di accesso → Utente autenticato (token JWT presente e valido)
+
+Header:
+bearer → string
+
+Request body:
+pimage → multipart/form-data, immagine jpg
+
+Risposte:
+200 OK
+{ "message": "Foto profilo aggiornata con successo." }
+
+400 Bad Request
+{ "error": "Nessuna foto ricevuta." }
+{ "error": "Formato foto non valido. Solo JPG supportato." }
+{ "error": "Foto troppo grande. Massimo 100KB." }
+
+401 Unauthorized
+{ "error": "Token non valido." }
+{ "error": "Token scaduto. Esegui di nuovo il login." }
+
+500 Internal Server Error
+{ "error": "Errore durante il caricamento della foto." }
+{ "error": "Errore durante l'aggiornamento nel database." }
+
+Query SQL:
+//Aggiorna la foto profilo dell'utente
+UPDATE utente
+SET foto = $1
+WHERE username = $2
+
+JS:
+Nel caricamento della foto profilo, è necessario verificare in JavaScript la presenza del file pimage nella richiesta, accertarsi che il tipo sia image/jpeg e che la dimensione non superi i 100KB. Il file va poi salvato nel percorso ./resources/<username>.jpg, utilizzando req.user come nome identificativo. Tutte queste operazioni, comprese la gestione degli errori durante il salvataggio e la costruzione della risposta personalizzata, devono essere gestite in JavaScript, in quanto non sono esprimibili mediante query SQL.
+
+
+
+
+RICERCA UTENTE (PER USERNAME)
+Metodo → GET
+Endpoint → /utente/search?query=string
+Descrizione → Restituisce una lista di utenti il cui username inizia con la stringa specificata
+Vincoli di accesso → Utente autenticato (token JWT presente e valido)
+
+Header:
+bearer → string
+
+Parametri:
+query → string 
+
+Risposte:
+200 OK
+[
+  {
+    "username": "utente1",
+    "mail": "utente1@example.com",
+    "num_follower": 12,
+    "num_followed": 4
+  },
+]
+
+400 Bad Request
+{ "error": "Parametri mancanti." }
+
+401 Unauthorized
+{ "error": "Token non valido." }
+{ "error": "Token scaduto. Esegui di nuovo il login." }
+
+500 Internal Server Error
+{ "error": "Errore durante la ricerca." }
+
+Query SQL:
+//Seleziona l'utente associato alla query inserita
+SELECT username, mail, num_follower, num_followed
+FROM utente
+WHERE username ILIKE $1 AND username != $2
+ORDER BY username ASC
+LIMIT 10
+
+JS:
+Nel recupero degli utenti tramite ricerca, è necessario verificare in JavaScript la presenza del parametro query nella richiesta. Inoltre, bisogna gestire eventuali errori dovuti a una query malformata o a problemi del server, e costruire una risposta appropriata in base all’esito dell’operazione. Tutte queste operazioni non sono esprimibili mediante query SQL e richiedono gestione lato JavaScript.
+
+
+
+
+VISUALIZZA PROFILO UTENTE
+Metodo → GET
+Endpoint → /utente/:username
+Descrizione → Restituisce i dati del profilo di un utente e la lista dei suoi post pubblici non moderati
+Vincoli di accesso → Utente autenticato (token JWT presente e valido)
+
+Header:
+bearer → string
+
+Parametri:
+username → string
+
+Risposte:
+200 OK
+{
+  "username": "utente1",
+  "mail": "utente1@example.com",
+  "foto": "utente1.jpg",
+  "num_follower": 12,
+  "num_followed": 8,
+  "post": [
+    {
+      "id_post": 123,
+      "testo": "Esempio di post",
+      "immagine": null,
+      "num_like": 7,
+      "data": "2025-06-15 12:45:00"
+    },
+  ]
+}
+
+400 Bad Request
+{ "error": "Parametro username mancante o non valido." }
+
+401 Unauthorized
+{ "error": "Token non valido." }
+{ "error": "Token scaduto. Esegui di nuovo il login." }
+
+404 Not Found
+{ "error": "Utente non trovato." }
+
+500 Internal Server Error
+{ "error": "Errore durante il recupero dell'utente." }
+{ "error": "Errore durante il recupero dei post dell'utente." }
+
+Query SQL:
+//Seleziona i dati dell'utente
+SELECT username, mail, foto, num_follower, num_followed
+FROM utente
+WHERE username = $1
+
+//Seleziona i post non moderati dell'utente
+SELECT id_post, testo, immagine, num_like, data
+FROM post
+WHERE username = $1
+  AND mod_username IS NULL
+  AND admin_username IS NULL
+  AND data_moderazione IS NULL
+ORDER BY data DESC
+
+JS:
+Nella visualizzazione del profilo utente, è necessario recuperare e validare in JavaScript il parametro `username`, verificando che sia presente e non vuoto. È inoltre indispensabile gestire i due passaggi sequenziali di interrogazione al database: uno per ottenere i dati del profilo, e uno per recuperarne i post. La logica di controllo sul risultato delle query e la costruzione della risposta, compresa la gestione degli errori (utente non trovato o problemi del server), non sono esprimibili mediante query SQL e devono essere implementate in JavaScript.
+
+
+
+
+PROMOZIONE A MODERATORE
+Metodo → POST
+Endpoint → /admin/promozione
+Descrizione → Promuove un utente a moderatore, se richiesto da un amministratore autenticato
+Vincoli di accesso → Solo utente autenticato con ruolo di amministratore
+
+Header:
+bearer → string
+
+Request body:
+{
+  "username": "string"
+}
+
+Risposte:
+200 OK
+{ "message": "Utente <username> promosso a moderatore." }
+
+400 Bad Request
+{ "error": "Parametri mancanti." }
+{ "error": "Utente già moderatore." }
+
+401 Unauthorized
+{ "error": "Token non valido." }
+{ "error": "Token scaduto. Esegui di nuovo il login." }
+{ "error": "Solo un amministratore può promuovere altri utenti." }
+
+404 Not Found
+{ "error": "Utente da promuovere non trovato." }
+
+500 Internal Server Error
+{ "error": "Errore nella verifica dei permessi." }
+{ "error": "Errore nella verifica dell'utente." }
+{ "error": "Errore durante la promozione." }
+
+Query SQL:
+//Controllo che l'utente sia amministratore
+SELECT 1
+FROM amministratore
+WHERE username = $1
+
+//Controllo che l'utente da promuovere esista
+SELECT 1
+FROM utente
+WHERE username = $1
+
+//Inserimento dello username del nuovo moderatore all'interno della tabella MODERATORE (solo se non esiste già)
+INSERT INTO moderatore (username, data_nomina, nominato_da)
+SELECT v.username, v.data_nomina, v.nominato_da
+FROM (
+    SELECT $1 AS username, CURRENT_TIMESTAMP AS data_nomina, $2 AS nominato_da
+) AS v
+WHERE NOT EXISTS (
+    SELECT 1 FROM moderatore WHERE username = v.username
+)
+
+JS:
+È necessario verificare in JavaScript che il parametro username sia presente nel corpo della richiesta. Si deve inoltre controllare che l’utente autenticato sia effettivamente un amministratore, gestendo l’esito della query di verifica e bloccando l’operazione se non autorizzato. Dopo aver accertato che l’utente da promuovere esista nel sistema, bisogna controllare che non sia già moderatore, per evitare duplicazioni. In base ai risultati di ciascun controllo, è infine necessario costruire e restituire messaggi di risposta coerenti, in caso di successo o di errore.
+
+
+
+
+RIMOZIONE MODERATORE
+Metodo: DELETE
+Endpoint: /admin/promozione/:username
+Descrizione: consente a un amministratore di revocare il ruolo di moderatore a un utente.
+Vincoli di accesso: utente autenticato e amministratore.
+
+Header:
+bearer → string
+
+Parametri:
+username → string
+
+Risposte:
+200 OK
+{ "message": "Moderatore elena rimosso con successo." }
+
+401 Unauthorized
+{ "error": "Token non valido." }
+{ "error": "Token scaduto. Esegui di nuovo il login." }
+{ "error": "Solo un amministratore può promuovere altri utenti." }
+
+404 Not Found
+{ "error": "Moderatore da rimuovere non trovato." }
+
+500 Internal Server Error
+{ "error": "Errore nella verifica del moderatore." }
+{ "error": "Errore durante la rimozione del moderatore." }
+
+Query SQL:
+//Verifica se l’utente autenticato è amministratore
+SELECT 1
+FROM amministratore
+WHERE username = $1
+
+//Verifica se l’utente è effettivamente moderatore
+SELECT 1
+FROM moderatore
+WHERE username = $1
+
+//Rimozione dal ruolo di moderatore
+DELETE FROM moderatore
+WHERE username = $1
+
+JS:
+È necessario recuperare l’username del moderatore da rimuovere da req.params e verificare tramite logica JavaScript che l’utente autenticato sia effettivamente un amministratore, gestendo l’autorizzazione. Bisogna poi controllare che l’utente da rimuovere sia realmente un moderatore. Dopo aver eseguito i controlli, si procede con la rimozione solo se il moderatore non ha già moderato alcun post: questo vincolo logico deve essere gestito lato JavaScript, poiché richiede una decisione basata sul contenuto della tabella post. In tutti i passaggi, occorre gestire i possibili errori restituendo messaggi appropriati in caso di autorizzazione negata, utente inesistente, o errore di esecuzione.
+
+
+
+
+OTTENIMENTO LISTA MODERATORI
+Metodo → GET
+Endpoint → /admin/moderatori
+Descrizione → Restituisce la lista di tutti gli utenti con ruolo di moderatore.
+Vincoli di accesso → Solo amministratori.
+
+Header:
+bearer → string
+
+Risposte:
+200 OK
+[
+  {
+    "username": "giulia_moder",
+    "data_nomina": "2025-05-01 12:45:00",
+    "nominato_da": "admin1"
+  },
+  {
+    "username": "luca123",
+    "data_nomina": "2025-06-02 09:22:10",
+    "nominato_da": "admin1"
+  }
+]
+
+401 Unauthorized
+{ "error": "Token non valido." }
+{ "error": "Token scaduto. Esegui di nuovo il login." }
+{ "error": "Solo un amministratore può accedere a questa risorsa." }
+
+500 Internal Server Error
+{ "error": "Errore durante il recupero dei moderatori." }
+{ "error": "Errore nella verifica dei permessi." }
+
+Query SQL:
+//Verifica che l’utente sia amministratore
+SELECT 1
+FROM amministratore
+WHERE username = $1
+
+//Recupero lista moderatori
+SELECT username, data_nomina, nominato_da
+FROM moderatore
+ORDER BY username ASC
+
+JS:
+È necessario verificare che l’utente autenticato sia un amministratore, gestendo i permessi con una logica condizionale lato server prima di eseguire la query. In caso contrario, bisogna restituire un errore di accesso (403 o 401). Anche la gestione degli errori in caso di fallimento della query SQL o di problemi lato server deve essere gestita in JavaScript.
+
+
+
+
+SEGUI UN UTENTE
+Metodo → POST
+Endpoint → /follow/:username
+Descrizione → Consente all’utente autenticato di iniziare a seguire un altro utente.
+Vincoli di accesso → Utente autenticato.
+
+Header:
+bearer → string
+
+Parametri:
+username → string
+
+Risposte:
+200 OK
+{ "message": "Ora segui mario123." }
+
+400 Bad Request
+{ "error": "Non puoi seguire te stesso." }
+{ "error": "Stai già seguendo giulia." }
+
+401 Unauthorized
+{ "error": "Token non valido." }
+{ "error": "Token scaduto. Esegui di nuovo il login." }
+{ "error": "Token non valido." }
+
+404 Not Found
+{ "error": "Utente da seguire non trovato." }
+
+500 Internal Server Error
+{ "error": "Errore nella verifica dell'utente." }
+{ "error": "Errore durante il follow." }
+{ "error": "Errore durante l'aggiornamento dei contatori." }
+
+Query SQL:
+//Verifica esistenza utente da seguire
+SELECT 1 FROM utente WHERE username = $1
+
+//Verifica se l’utente segue già l'altro utente
+SELECT 1 FROM seguito WHERE username_follower = $1 AND username_followed = $2
+
+//Inserimento nella tabella SEGUITO
+INSERT INTO seguito (username_follower, username_followed)
+VALUES ($1, $2)
+
+//Aggiornamento contatori num_follower dell’utente seguito
+UPDATE utente
+SET num_follower = num_follower + 1
+WHERE username = $1
+
+//Aggiornamento contatori num_followed dell’utente che segue
+UPDATE utente
+SET num_followed = num_followed + 1
+WHERE username = $1
+
+JS:
+È necessario verificare che l’utente non stia tentando di seguire sé stesso confrontando req.user con req.params.username. Inoltre, bisogna controllare se la relazione di follow esiste già per evitare duplicazioni, e aggiornare i contatori num_follower e num_followed solo dopo il successo del follow. Tutte queste verifiche condizionali, la gestione sequenziale delle operazioni e la gestione degli errori con risposte appropriate sono compiti da implementare in JavaScript.
+
+
+
+
+SMETTI DI SEGUIRE UN UTENTE
+Metodo → DELETE
+Endpoint → /follow/:username
+Descrizione → Consente all’utente autenticato di smettere di seguire un altro utente.
+Vincoli di accesso → Utente autenticato.
+
+Header:
+bearer → string
+
+Parametri:
+username → string
+
+Risposte:
+200 OK
+{ "message": "Non segui più mario123." }
+
+400 Bad Request
+{ "error": "Non puoi smettere di seguire te stesso." }
+{ "error": "Non stai seguendo giulia." }
+
+401 Unauthorized
+{ "error": "Token non valido." }
+{ "error": "Token scaduto. Esegui di nuovo il login." }
+
+404 Not Found
+{ "error": "Utente da smettere di seguire non trovato." }
+
+500 Internal Server Error
+{ "error": "Errore nella verifica dell'utente." }
+{ "error": "Errore durante lo smettere di seguire." }
+{ "error": "Errore durante l'aggiornamento dei contatori." }
+
+Query SQL:
+//Verifica esistenza utente da smettere di seguire
+SELECT 1 FROM utente WHERE username = $1
+
+//Eliminazione dalla tabella SEGUITO
+DELETE FROM seguito
+WHERE username_follower = $1 AND username_followed = $2
+
+//Aggiornamento contatore num_follower dell’utente seguito
+UPDATE utente
+SET num_follower = num_follower - 1
+WHERE username = $1
+
+//Aggiornamento contatore num_followed dell’utente che ha smesso di seguire
+UPDATE utente
+SET num_followed = num_followed - 1
+WHERE username = $1
+
+JS:
+È necessario verificare che l’utente non stia tentando di smettere di seguire sé stesso, confrontando req.user con req.params.username. È inoltre indispensabile gestire la sequenza delle operazioni: prima controllare se l’utente da smettere di seguire esiste, poi procedere con la rimozione della relazione di follow e l’aggiornamento dei contatori. La gestione dei casi di errore e delle risposte appropriate (es. utente non trovato, follow inesistente, errori nel database) deve essere effettuata in JavaScript.
+
+
+
+
+VISUALIZZA LA LISTA DEI FOLLOWER
+Metodo → GET
+Endpoint → /followers
+Descrizione → Restituisce la lista degli utenti che seguono l’utente autenticato.
+Vincoli di accesso → Utente autenticato.
+
+Header:
+bearer → string
+
+Risposte:
+200 OK
+[
+  {
+    "username": "alice99",
+    "mail": "alice99@example.com"
+  },
+  {
+    "username": "bob88",
+    "mail": "bob88@example.com"
+  }
+]
+
+401 Unauthorized
+{ "error": "Token non valido." }
+{ "error": "Token scaduto. Esegui di nuovo il login." }
+
+500 Internal Server Error
+{ "error": "Errore durante il recupero dei follower." }
+
+Query SQL
+//Seleziona lo username e la mail di tutti gli utenti che seguono l'utente autenticato.
+SELECT u.username, u.mail
+FROM seguito s
+JOIN utente u ON s.username_follower = u.username
+WHERE s.username_followed = $1
+ORDER BY u.username ASC
+
+JS:
+È necessario gestire la risposta al client restituendo la lista dei follower ottenuta dalla query e prevedere un controllo sugli eventuali errori generati durante l’interrogazione del database, con invio di un messaggio di errore adeguato in caso di fallimento.
+
+
+
+
+VISUALIZZA LA LISTA DEI SEGUITI
+Metodo → GET
+Endpoint → /followed
+Descrizione → Restituisce la lista degli utenti seguiti dall’utente autenticato.
+Vincoli di accesso → Utente autenticato.
+
+Header:
+bearer → string
+
+Risposte:
+200 OK
+[
+  {
+    "username": "mario_rossi",
+    "mail": "mario@example.com"
+  },
+  ...
+]
+
+401 Unauthorized
+{ "error": "Token non valido." }
+{ "error": "Token scaduto. Esegui di nuovo il login." }
+
+500 Internal Server Error
+{ "error": "Errore durante il recupero dei seguiti." }
+
+Query SQL:
+//Restituisce l'elenco degli utenti seguiti dall'utente autenticato
+SELECT u.username, u.mail
+FROM seguito s
+JOIN utente u ON s.username_followed = u.username
+WHERE s.username_follower = $1
+ORDER BY u.username ASC
+
+JS:
+Occorre estrarre l’identità dell’utente autenticato da req.user, in quanto viene valorizzato dal middleware di autenticazione e non può essere gestito direttamente via SQL. Inoltre, è necessario restituire i risultati ottenuti dalla query in formato JSON come risposta HTTP e gestire eventuali errori nella fase di interrogazione al database, restituendo in tal caso un messaggio di errore con codice 500.
+
+
+
+
+CREAZIONE NUOVO POST
+Metodo → POST
+Endpoint → /post
+Descrizione → Crea un nuovo post testuale oppure con immagine (JPG max 100KB). L’utente non può creare un nuovo post se ha già avuto almeno 3 post moderati negli ultimi 30 giorni.
+Vincoli di accesso → Utente autenticato.
+
+Header:
+bearer → string
+
+Request body:
+testo → string
+immagine → multipart/form-data, immagine jpg
+
+Risposte:
+200 OK
+{ "message": "Post testuale creato con successo." }
+{ "message": "Post con immagine creato con successo." }
+
+400 Bad Request
+{ "error": "Devi fornire un testo o un'immagine." }
+{ "error": "Puoi fornire solo un testo o un'immagine, non entrambi." }
+{ "error": "Hai raggiunto il limite di 3 post moderati negli ultimi 30 giorni. Non puoi creare nuovi post." }
+{ "error": "Solo immagini JPG sono supportate." }
+{ "error": "Immagine troppo grande. Massimo 100KB." }
+
+401 Unauthorized
+{ "error": "Token non valido." }
+{ "error": "Token scaduto. Esegui di nuovo il login." }
+
+500 Internal Server Error
+{ "error": "Errore nel controllo dei post moderati." }
+{ "error": "Errore durante l'inserimento." }
+{ "error": "Errore nel salvataggio dell'immagine." }
+{ "error": "Errore durante l'inserimento del post." }
+
+Query SQL:
+//Controllo post moderati negli ultimi 30 giorni
+SELECT COUNT(*) AS moderati
+FROM post
+WHERE username = $1
+  AND data_moderazione IS NOT NULL
+  AND data_moderazione >= CURRENT_DATE - INTERVAL '30 days'
+
+//Inserimento post testuale
+INSERT INTO post (testo, immagine, type, data, num_like, username)
+VALUES ($1, NULL, 'testo', CURRENT_TIMESTAMP, 0, $2)
+
+//Inserimento post con immagine:
+INSERT INTO post (testo, immagine, type, data, num_like, username)
+VALUES (NULL, $1, 'immagine', CURRENT_TIMESTAMP, 0, $2)
+
+JS:
+Occorre estrarre i dati dal corpo della richiesta e verificare che sia presente solo il testo o solo l’immagine, ma non entrambi né nessuno. Se il post è un'immagine, va controllato che il formato sia JPG e che non superi i 100KB. In tal caso, l'immagine va salvata nel file system locale con un nome univoco. Inoltre, è necessario gestire tutti gli errori che possono verificarsi nella validazione degli input, nel salvataggio del file o nell’inserimento nel database, restituendo risposte appropriate.
+
+
+
+ELIMINAZIONE POST (SOLO AUTORE)
+Metodo → DELETE
+Endpoint → /post/:id_post
+Descrizione → Elimina un post a partire dal suo ID, solo se l’utente autenticato è l’autore.
+Vincoli di accesso → Utente autenticato, autore del post.
+
+Header:
+bearer → string
+
+Parametri:
+id_post → string
+
+Risposte:
+200 OK
+{ "message": "Post eliminato con successo." }
+
+400 Bad Request
+{ "error": "ID post non valido." }
+
+401 Unauthorized
+{ "error": "Non sei autorizzato a eliminare questo post." }
+{ "error": "Token non valido." }
+{ "error": "Token scaduto. Esegui di nuovo il login." }
+
+404 Not Found
+{ "error": "Post non trovato." }
+
+500 Internal Server Error
+{ "error": "Errore durante il controllo del post." }
+{ "error": "Errore durante l'eliminazione del post." }
+
+Query SQL:
+//Verifica del post e autore
+SELECT username
+FROM post
+WHERE id_post = $1
+
+//Eliminazione del post:
+DELETE FROM post
+WHERE id_post = $1
+
+JS:
+Convertire id_post in intero e verificarne la validità, confrontare il campo username del post con req.user per accertare che l’utente autenticato sia l’autore, e in caso di immagine, eliminare il file dal file system. È inoltre necessario gestire tutte le condizioni di errore (ID non valido, post non trovato, accesso non autorizzato, problemi durante la cancellazione del file) e restituire messaggi  coerenti.
+
+
+
+
+VISUALIZZAZIONE BACHECA
+Metodo → GET
+Endpoint → /bacheca
+Descrizione → Ottiene i post degli utenti seguiti e dell’utente autenticato, in ordine cronologico decrescente, impaginati.
+Vincoli di accesso → Utente autenticato
+
+Header:
+bearer → string
+
+Parametri:
+page → integer
+
+Risposte:
+200 OK
+[
+  {
+    "username": "utente1",
+    "foto_profilo_utente": "utente1.jpg",
+    "testo": "Ciao a tutti!",
+    "immagine": null,
+    "like": 3,
+    "flaggato": false,
+    "moderato": false
+  },
+  ...
+]
+
+401 Unauthorized
+{ "error": "Token non valido." }
+{ "error": "Token scaduto. Esegui di nuovo il login." }
+
+500 Internal Server Error
+{ "error": "Errore durante il recupero della bacheca." }
+
+Query SQL:
+//Verifica ruolo utente (moderatore o amministratore)
+SELECT 'moderatore' AS ruolo FROM moderatore WHERE username = $1
+UNION
+SELECT 'amministratore' AS ruolo FROM amministratore WHERE username = $1
+
+//Estrazione dei post visibili nella bacheca:
+SELECT 
+    u.username, 
+    u.foto AS foto_profilo_utente, 
+    p.testo, 
+    p.immagine, 
+    p.num_like AS like,
+    EXISTS (
+        SELECT 1 
+        FROM flag f 
+        WHERE f.id_post = p.id_post AND f.username = $1
+    ) AS flaggato,
+    (p.mod_username IS NOT NULL OR p.admin_username IS NOT NULL) AS moderato
+FROM post p
+JOIN utente u ON p.username = u.username
+WHERE 
+    (p.username = $1 OR p.username IN (
+        SELECT username_followed FROM seguito WHERE username_follower = $1
+    ))
+ORDER BY p.data DESC
+LIMIT 2 OFFSET $2
+
+//Se l’utente non è moderatore né admin, vengono esclusi i post moderati con:
+AND p.mod_username IS NULL
+AND p.admin_username IS NULL
+AND p.data_moderazione IS NULL
+
+JS:
+Determinare il numero di pagina richiesto (page) dalla query string, calcolare dinamicamente offset e limit per l’impaginazione (con limit = 2), verificare se l’utente ha ruolo di moderatore o amministratore per decidere se includere anche i post moderati, e costruire dinamicamente la parte variabile della query SQL (inclusione della colonna moderato). Inoltre, è necessario gestire gli errori in fase di verifica ruolo e di esecuzione della query bacheca, restituendo messaggi coerenti.
+
+
+
+
+AGGIUNTA DI UN LIKE AD UN POST
+Metodo → POST
+Endpoint → /like/:id_post
+Descrizione → Permette all’utente autenticato di mettere like a un post specificato tramite id_post, se il post esiste e non è stato moderato.
+Vincoli di accesso → Utente autenticato
+
+Header:
+bearer → string
+
+Parametri:
+id_post → string
+
+Risposte:
+200 OK
+{ "message": "Like aggiunto con successo." }
+
+400 Bad Request
+{ "error": "ID post non valido." }
+{ "error": "Hai già messo like a questo post." }
+{ "error": "Il post è stato moderato." }
+
+401 Unauthorized
+{ "error": "Token non valido." }
+{ "error": "Token scaduto. Esegui di nuovo il login." }
+
+404 Not Found
+{ "error": "Post non trovato." }
+
+500 Internal Server Error
+{ "error": "Errore durante la verifica del post." }
+{ "error": "Errore durante il controllo del like." }
+{ "error": "Errore durante l'inserimento del like." }
+{ "error": "Errore durante l'aggiornamento dei like." }
+
+Query SQL:
+//Verifica se il post esiste e se è stato moderato
+SELECT data_moderazione FROM post WHERE id_post = $1
+
+//Verifica se l’utente ha già messo like al post
+SELECT 1 FROM mi_piace WHERE id_post = $1 AND username = $2
+
+//Inserisce il like nella tabella MI_PIACE
+INSERT INTO mi_piace (id_post, username)
+VALUES ($1, $2)
+
+//Aggiorna il numero di like del post
+UPDATE post
+SET num_like = num_like + 1
+WHERE id_post = $1
+
+JS:
+Per gestire questo endpoint, è necessario estrarre e validare id_post, assicurandosi che sia un intero valido. Dopo aver verificato l’esistenza del post, occorre controllare che non sia stato moderato (tramite il campo data_moderazione). Se il post è valido, si controlla che l’utente non abbia già messo like. In caso positivo, si inserisce il like e si aggiorna il contatore. È fondamentale gestire tutti i casi di errore.
+
+
+
+
+RIMOZIONE DI UN LIKE AD UN POST
+Metodo → DELETE
+Endpoint → /like/:id_post
+Descrizione → Permette all’utente autenticato di rimuovere il like precedentemente messo a un post, solo se il post non è stato moderato.
+Vincoli di accesso → Utente autenticato
+
+Header:
+bearer → string
+
+Parametri:
+id_post → string
+
+Risposte:
+200 OK
+{ "message": "Like rimosso con successo." }
+
+400 Bad Request
+{ "error": "ID post non valido." }
+{ "error": "Non hai messo like a questo post." }
+{ "error": "Il post è stato moderato." }
+
+401 Unauthorized
+{ "error": "Token non valido." }
+{ "message": "Token scaduto. Esegui di nuovo il login." }
+
+404 Not Found
+{ "error": "Post non trovato." }
+
+500 Internal Server Error
+{ "error": "Errore durante la verifica del post." }
+{ "error": "Errore durante il controllo del like." }
+{ "error": "Errore durante la rimozione del like." }
+{ "error": "Errore durante l'aggiornamento dei like." }
+
+Query SQL:
+//Verifica se il post esiste e se è stato moderato
+SELECT data_moderazione FROM post WHERE id_post = $1
+
+//Verifica se l’utente ha messo like
+SELECT 1 FROM mi_piace WHERE id_post = $1 AND username = $2
+
+//Rimozione del like
+DELETE FROM mi_piace WHERE id_post = $1 AND username = $2
+
+//Aggiorna il contatore dei like nel post
+UPDATE post
+SET num_like = num_like - 1
+WHERE id_post = $1
+
+JS:
+È necessario estrarre il parametro id_post dalla richiesta e verificarne la validità come numero intero. Dopo aver accertato che il post esista, è necessario verificare che non sia stato moderato (tramite il campo data_moderazione). Solo se il post è valido e non moderato, si procede a controllare che l’utente abbia effettivamente messo like. In caso affermativo, si rimuove il like e si aggiorna il numero di like nel post. L’endpoint deve inoltre restituire risposte appropriate per ogni esito possibile: validazione, autorizzazione, e fallimenti a livello di database.
+
+
+
+
+SEGNALAZIONE DI UN POST
+Metodo → POST
+Endpoint → /flag/:id_post
+Descrizione → Permette a un utente autenticato di segnalare un post come inappropriato, solo se il post non è stato moderato e non è stato creato dall’utente stesso.
+Vincoli di accesso → Utente autenticato (non può segnalare i propri post)
+
+Header:
+bearer → string
+
+Parametri:
+id_post → string
+
+Risposte:
+200 OK
+{ "message": "Post segnalato con successo." }
+
+400 Bad Request
+{ "error": "ID post non valido." }
+{ "error": "Non puoi segnalare un post creato da te." }
+{ "error": "Hai già segnalato questo post." }
+{ "error": "Il post è già stato moderato." }
+
+401 Unauthorized
+{ "error": "Token non valido." }
+{ "error": "Token scaduto. Esegui di nuovo il login." }
+
+404 Not Found
+{ "error": "Post non trovato." }
+
+500 Internal Server Error
+{ "error": "Errore durante la verifica del post." }
+{ "error": "Errore durante il controllo del flag." }
+{ "error": "Errore durante l'inserimento del flag." }
+
+Query SQL:
+//Verifica che il post esista e verifica se è già stato moderato
+SELECT username, data_moderazione FROM post WHERE id_post = $1
+
+//Controlla se l’utente ha già segnalato il post
+SELECT 1 FROM flag WHERE id_post = $1 AND username = $2
+
+//Inserisce la segnalazione (flag)
+INSERT INTO flag (id_post, username)
+VALUES ($1, $2)
+
+JS:
+Il codice deve estrarre id_post dal path e verificarne la validità come numero intero. Deve poi recuperare l'autore del post e controllare che l’utente autenticato non sia l’autore. È inoltre necessario controllare che il post non sia già stato moderato, basandosi sul campo data_moderazione. Se il post è valido e non moderato, si verifica che l’utente non abbia già inviato una segnalazione. In caso positivo, si registra la segnalazione. Devono essere gestite tutte le risposte appropriate per ogni condizione (errore, conflitto, post inesistente, ecc.).
+
+
+
+
+RIMOZIONE SEGNALAZIONE
+Metodo → DELETE
+Endpoint → /flag/:id_post
+Descrizione → Permette a un utente autenticato di rimuovere una segnalazione (flag) precedentemente effettuata su un post, solo se il post non è stato moderato.
+Vincoli di accesso → Utente autenticato, che ha già segnalato quel post.
+
+Header:
+bearer → string
+
+Parametri:
+id_post → string
+
+Risposte:
+200 OK
+{ "message": "Flag rimosso con successo." }
+
+400 Bad Request
+{ "error": "ID post non valido." }
+{ "error": "Non hai segnalato questo post." }
+{ "error": "Il post è già stato moderato." }
+
+401 Unauthorized
+{ "error": "Token non valido." }
+{ "error": "Token scaduto. Esegui di nuovo il login." }
+
+404 Not Found
+{ "error": "Post non trovato." }
+
+500 Internal Server Error
+{ "error": "Errore durante la verifica del post." }
+{ "error": "Errore durante il controllo del flag." }
+{ "error": "Errore durante la rimozione del flag." }
+
+Query SQL:
+//Verifica che il post esista e non sia moderato
+SELECT data_moderazione FROM post WHERE id_post = $1
+
+//Verifica che l’utente abbia messo il flag
+SELECT 1 FROM flag WHERE id_post = $1 AND username = $2
+
+//Elimina il flag
+DELETE FROM flag WHERE id_post = $1 AND username = $2
+
+JS:
+Il codice deve estrarre e validare id_post come numero intero. Dopo aver verificato che il post esista, è necessario controllare che non sia stato moderato (data_moderazione deve essere null). Solo in tal caso si può verificare se l’utente ha già messo il flag e procedere con l’eliminazione. Tutti i casi di errore devono essere gestiti restituendo messaggi coerenti con le condizioni, tra cui: post non valido, non trovato, post moderato, flag inesistente o errori interni.
+
+
+
+
+VISUALIZZAZIONE LISTA POST FLAGGATI (NON ANCORA MODERATI)
+Metodo → GET
+Endpoint → /moderazione/flag
+Descrizione → Recupera la lista dei post che sono stati segnalati almeno una volta (tramite flag) ma che non sono ancora stati moderati.
+Vincoli di accesso → Solo utenti con ruolo di moderatore o amministratore.
+
+Header:
+bearer → string
+
+Risposte:
+200 OK
+[
+  {
+    "id_post": 12,
+    "testo": "Contenuto offensivo",
+    "immagine": null,
+    "data": "2025-06-15 13:42:10",
+    "autore": "utente123",
+    "num_flag": 5
+  },
+  ...
+]
+
+401 Unauthorized
+{ "error": "Token non valido." }
+{ "error": "Token scaduto. Esegui di nuovo il login." }
+
+403 Forbidden
+{ "error": "Accesso riservato a moderatori o amministratori." }
+
+500 Internal Server Error
+{ "error": "Errore nella verifica dei permessi." }
+{ "error": "Errore nel recupero dei post flaggati." }
+
+Query SQL:
+//Verifica se l’utente è moderatore o amministratore
+SELECT 1 FROM moderatore WHERE username = $1
+UNION
+SELECT 1 FROM amministratore WHERE username = $1
+
+//Recupera i post segnalati non ancora moderati
+SELECT 
+    p.id_post, 
+    p.testo, 
+    p.immagine, 
+    p.data, 
+    p.username AS autore,
+    COUNT(f.id_post) AS num_flag
+FROM post p
+JOIN flag f ON p.id_post = f.id_post
+WHERE 
+    p.mod_username IS NULL 
+    AND p.admin_username IS NULL 
+    AND p.data_moderazione IS NULL
+GROUP BY 
+    p.id_post, p.testo, p.immagine, p.data, p.username
+ORDER BY 
+    num_flag DESC
+
+JS:
+Il codice deve verificare che l’utente autenticato abbia i permessi da moderatore o amministratore, altrimenti restituire un errore 403. Inoltre, deve gestire eventuali errori nella verifica dei ruoli o nell’esecuzione della query, restituendo risposte adeguate in caso di fallimento.
+
+
+
+
+MODERAZIONE DI UN POST FLAGGATO
+Metodo → PATCH
+Endpoint → /moderazione/:id_post
+Descrizione → Permette a un moderatore o amministratore di moderare un post che è stato segnalato (flaggato). La moderazione viene registrata inserendo la data e il nome del moderatore o dell’amministratore.
+
+Header:
+bearer → string
+
+Parametri:
+id_post → string
+
+Risposte:
+200 OK
+{ "message": "Post moderato con successo." }
+
+400 Bad Request
+{ "error": "ID post non valido." }
+{ "error": "Post già moderato." }
+{ "error": "Non è possibile moderare un post non flaggato." }
+
+401 Unauthorized
+{ "error": "Token non valido." }
+{ "error": "Token scaduto. Esegui di nuovo il login." }
+
+403 Forbidden
+{ "error": "Accesso riservato a moderatori o amministratori." }
+
+404 Not Found
+{ "error": "Post non trovato." }
+
+500 Internal Server Error
+{ "error": "Errore nella verifica dei permessi." }
+{ "error": "Errore durante la verifica del post." }
+{ "error": "Errore durante la verifica dei flag." }
+{ "error": "Errore durante la moderazione del post." }
+
+Query SQL:
+//Verifica se l’utente è moderatore o amministratore
+SELECT 'moderatore' AS ruolo FROM moderatore WHERE username = $1
+UNION
+SELECT 'amministratore' AS ruolo FROM amministratore WHERE username = $1
+
+//Controlla che il post esista
+SELECT * FROM post WHERE id_post = $1
+
+//Verifica che sia stato flaggato:
+SELECT 1 FROM flag WHERE id_post = $1
+
+//Aggiorna il post con i dati della moderazione:
+UPDATE post
+SET data_moderazione = CURRENT_DATE,
+    mod_username = $2 -- se moderatore
+    -- oppure admin_username = $2 -- se amministratore
+WHERE id_post = $1
+
+JS:
+Il sistema deve verificare che l’utente autenticato abbia i permessi da moderatore o amministratore e determinare il ruolo corretto per aggiornare l'attributo appropriato (mod_username o admin_username). Inoltre, deve assicurarsi che il post esista, che non sia già stato moderato e che sia stato flaggato. Deve anche gestire eventuali errori nella verifica dei permessi, nell'accesso al post e durante l'esecuzione degli aggiornamenti.
+
+
+
+
+VISUALIZZAZIONE LISTA POST MODERATI
+Metodo → GET
+Endpoint → /moderazione/post
+Descrizione → Ritorna la lista di tutti i post che sono stati moderati, ordinati per data di moderazione (dal più recente).
+
+Header:
+bearer → string
+
+Risposte:
+200 OK
+[
+  {
+    "id_post": 7,
+    "testo": "Contenuto inappropriato",
+    "immagine": null,
+    "data": "2025-06-14",
+    "autore": "gianni",
+    "mod_username": "luca",
+    "admin_username": null,
+    "data_moderazione": "2025-06-15"
+  },
+  ...
+]
+
+401 Unauthorized
+{ "error": "Token non valido." }
+{ "error": "Token scaduto. Esegui di nuovo il login." }
+
+403 Forbidden
+{ "error": "Accesso riservato a moderatori o amministratori." }
+
+500 Internal Server Error
+{ "error": "Errore nella verifica dei permessi." }
+{ "error": "Errore nel recupero dei post moderati." }
+
+Query SQL:
+//Verifica se l’utente ha ruolo di moderatore o amministratore
+SELECT 1 FROM moderatore WHERE username = $1
+UNION
+SELECT 1 FROM amministratore WHERE username = $1
+
+//Estrai i post moderati con i dati di moderazione
+SELECT p.id_post, p.testo, p.immagine,
+       TO_CHAR(p.data, 'YYYY-MM-DD') AS data,
+       p.username AS autore,
+       p.mod_username,
+       p.admin_username,
+       TO_CHAR(p.data_moderazione, 'YYYY-MM-DD') AS data_moderazione
+FROM post p
+WHERE p.data_moderazione IS NOT NULL
+ORDER BY p.data_moderazione DESC;
+
+JS:
+Il sistema deve identificare l’utente autenticato tramite il token JWT (req.user) e verificare che abbia i permessi da moderatore o amministratore. In base all’esito, può consentire o negare l’accesso alla risorsa, restituendo eventualmente un errore 403 in caso di accesso non autorizzato. Gestisce anche eventuali errori lato server.
+
+
+
+
+======================================================
+     PROGETTAZIONE DELLE API REST CON NODE JS
+======================================================
+
+Per gestire in modo sicuro l’autenticazione degli utenti, ho implementato un middleware basato su JWT (JSON Web Token). Questo componente si occupa di verificare la presenza e la validità del token associato a ciascuna richiesta, consentendo l’accesso solo se l’utente è effettivamente autenticato.
+
+Il processo inizia estraendo il token dall’intestazione della richiesta, nella chiave personalizzata bearer. Se il token è assente, viene restituito un errore 400, segnalando che l’autenticazione è obbligatoria ma non è stata fornita.
+
+Se il token è presente, viene passato alla funzione di verifica fornita dalla libreria jsonwebtoken. In caso di successo, il middleware estrae l’username dal payload e lo salva all’interno di req.user, così da renderlo disponibile ai successivi endpoint della richiesta.
+
+Un caso particolare è quello in cui il token è formalmente corretto ma è scaduto: in questa situazione specifica, viene intercettato l’errore TokenExpiredError. Quando ciò accade, il middleware non si limita a bloccare l’accesso, ma aggiorna anche il campo fine_sessione nella tabella Login, segnando l’ora corrente come momento di termine della sessione associata a quel token. Questo passaggio è fondamentale per mantenere una traccia coerente della durata effettiva delle sessioni utente nel sistema. Solo dopo questo aggiornamento viene restituito un errore 401 che invita l’utente a ripetere il login.
+
+Se invece il token è presente ma non valido per altri motivi (come firma errata o formato non conforme), viene restituito un errore 401 con un messaggio che segnala chiaramente l’invalidità del token.
+
+Con questo approccio, ho realizzato un controllo completo e tracciabile delle sessioni di accesso, che gestisce correttamente sia i token validi che quelli scaduti o corrotti, garantendo la sicurezza dell’intera piattaforma.
+
+
+
+====== POST/registrazione ======
+Quando un utente tenta di registrarsi, il sistema esamina innanzitutto se tutti i campi necessari — come nome utente, email e password — siano stati compilati correttamente, e se l’indirizzo email rispetta una struttura sintattica accettabile (ad esempio qualcosa del tipo nome@dominio.it). Se uno di questi elementi è assente o non rispetta le regole previste, la registrazione viene immediatamente interrotta, restituendo un errore con codice 400.
+
+Dopo questa fase preliminare, viene interrogato il database per verificare che l’indirizzo email o il nome utente non risultino già presenti tra quelli registrati. In caso di corrispondenze, la procedura si blocca e viene notificato il conflitto all’utente.
+
+Per i nuovi iscritti, la password viene protetta tramite l’uso dell’algoritmo scrypt, insieme a un salt generato casualmente. Il risultato, composto dall’hash della password e dal salt, viene poi salvato nella tabella insieme agli altri dati, con i contatori relativi ai follower e ai seguiti inizializzati a zero.
+
+Se tutte le operazioni si concludono correttamente, viene inviata una risposta di successo con codice 201. In presenza di eventuali malfunzionamenti nel processo di cifratura o durante l'interazione con il database, viene restituito un errore generico con codice 500.
+
+Infine, per assicurarmi che l’indirizzo email sia ben formato fin dall’inizio, ho scelto di inserire una verifica tramite l’espressione regolare const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/. Anche se non era una condizione obbligatoria, ho ritenuto fosse utile implementarla per prevenire l’inserimento di email errate, come “utente@” o “utente@com”. Questo tipo di controllo migliora la qualità dei dati salvati e consente di notificare subito eventuali errori all’utente.
+
+
+====== POST/login ======
+Questo endpoint gestisce la procedura di login per un utente. Quando ricevo una richiesta, verifico innanzitutto che siano stati forniti sia lo username che la password. Se mancano, rispondo con un errore 400. Recupero poi dal database l’hash e il salt della password associata allo username indicato. Se lo username non esiste o la password non coincide dopo la ricostruzione dell’hash con `crypto.scrypt`, invio un errore 401.
+
+Se le credenziali sono corrette, controllo che non esista già una sessione aperta per quell’utente, cercando nella tabella `login` una riga con `fine_sessione IS NULL`. Se trovo una sessione attiva, blocco l’accesso restituendo errore 409. Se invece non ci sono sessioni aperte, genero un token JWT valido per un’ora e lo salvo nel database come `id_sessione`, registrando anche la data di inizio.
+
+Infine, restituisco il token all’utente. Se qualcosa va storto in uno di questi passaggi, invio un errore 500 con un messaggio specifico. Questo sistema garantisce un’autenticazione sicura, con gestione delle sessioni e prevenzione dei login multipli.
+
+Ho deciso di non permettere che un utente abbia più sessioni contemporaneamente aperte per mantenere il controllo e la tracciabilità delle attività effettuate sul sistema. In questo modo posso garantire che ogni utente operi in una sola sessione attiva per volta, riducendo il rischio che il proprio account venga utilizzato in parallelo da più dispositivi o persone, anche a loro insaputa. Questa scelta migliora la sicurezza e semplifica la gestione delle sessioni nel database.
+
+
+====== POST/logout ======
+Per questo endpoint ho voluto permettere all’utente autenticato di terminare la propria sessione attiva. Quando ricevo la richiesta, recupero il token JWT dall’header bearer, che uso anche come identificativo univoco della sessione nel database. Se il token è valido, aggiorno il campo fine_sessione con il timestamp corrente nella tabella login, in modo da segnare esattamente quando l’utente ha effettuato il logout. Ho scelto questa soluzione per mantenere uno storico delle sessioni, utile anche in ottica di sicurezza e tracciabilità. Se qualcosa va storto, restituisco un messaggio di errore per rendere chiaro cosa non ha funzionato.
+
+
+====== PATCH/profilo ======
+Ho deciso di aggiungere questo endpoint anche se non era esplicitamente richiesto perché ritengo importante permettere all’utente di poter aggiornare in autonomia le proprie informazioni personali, come la mail o la password. È una funzionalità comune e attesa in qualsiasi piattaforma, e consente all’utente di mantenere i propri dati aggiornati senza dover contattare un amministratore. Inoltre, offre un miglior controllo sulla sicurezza del proprio account, poiché consente la modifica della password in caso di sospetto accesso non autorizzato. Ho curato la validazione dei dati per evitare modifiche errate o incomplete, e ho gestito separatamente i casi di aggiornamento singolo o combinato per garantire maggiore flessibilità.
+
+
+====== POST/profilo/foto ======
+Ho implementato questo endpoint per permettere all’utente di aggiornare la propria immagine del profilo. Ho scelto di gestire l’upload tramite multipart/form-data, con controlli rigorosi sul tipo del file (solo JPG) e sulla dimensione massima (100KB), così da garantire coerenza e sicurezza. Le immagini vengono salvate nel file system con il nome dell’utente, rendendo semplice la gestione e il recupero. Infine, ho aggiornato il database associando il nome del file al campo foto, così da mantenerne traccia in modo strutturato.
+
+
+====== POST/admin/promozione ======
+Ho creato questo endpoint per permettere agli amministratori di assegnare il ruolo di moderatore a un altro utente. Per prima cosa, verifico che chi sta effettuando la richiesta sia davvero un amministratore, perché solo loro possono fare questa operazione. Poi controllo che l’utente indicato esista nel sistema e che non sia già moderatore. Se tutto è in ordine, aggiungo una nuova voce nella tabella dei moderatori, indicando la data della nomina e il nome dell’amministratore che l’ha effettuata. Questo serve a tenere traccia delle promozioni e a garantire che siano fatte in modo corretto e controllato.
+
+
+====== DELETE/admin/promozione/:username ======
+Ho deciso di inserire questo endpoint, anche se non era previsto inizialmente, per permettere all’amministratore di revocare il ruolo di moderatore a un utente qualora non fosse più ritenuto idoneo, avesse abusato delle sue funzioni o fosse stato promosso per errore. Ho ritenuto fondamentale offrire un controllo completo sui privilegi del sistema, dato che già esiste la possibilità di promuovere a moderatore. Tuttavia, per garantire la coerenza e la tracciabilità delle azioni compiute dai moderatori, non è consentito rimuovere dal ruolo un utente che ha già effettuato almeno una moderazione: in tal caso, la sua presenza nella tabella moderatore deve essere mantenuta come riferimento storico. Questo vincolo evita che si perda l’associazione tra l’azione moderativa e chi l’ha eseguita.
+
+
+====== GET/admin/moderatori ======
+Ho scelto di inserire questo endpoint anche se non richiesto per offrire agli amministratori una panoramica chiara e aggiornata di tutti gli utenti attualmente con il ruolo di moderatore. Avere accesso a queste informazioni consente di monitorare chi è stato promosso, da chi e quando, facilitando la gestione e il controllo dei privilegi nel sistema. Si tratta di un'informazione utile per garantire trasparenza nelle nomine e per supportare eventuali decisioni future, come revoche o verifiche sull’operato dei moderatori.
+
+
+====== POST/follow/:username ======
+Questo endpoint consente a un utente autenticato di iniziare a seguire un altro utente, identificato dallo username presente nel path. Prima di tutto, viene impedito che un utente possa seguire sé stesso, evitando una relazione priva di senso. Successivamente, il sistema verifica che l’utente da seguire esista e che non sia già seguito. Se le verifiche hanno esito positivo, viene creata una nuova relazione nella tabella seguito. Per garantire che i contatori num_follower e num_followed restino coerenti e aggiornati, questi vengono incrementati separatamente per l’utente seguito e per chi segue. La risposta finale conferma il successo dell’operazione oppure, in caso di errore, restituisce un messaggio adeguato.
+
+
+====== DELETE/follow/:username ======
+Questo endpoint permette a un utente autenticato di smettere di seguire un altro utente specificato nel parametro del path. Per prima cosa, si verifica che l’utente non stia cercando di rimuovere sé stesso dalla lista dei seguiti, situazione che non ha senso e viene quindi bloccata. Dopo aver controllato che l’utente target esista realmente nel database, si verifica che la relazione di follow sia presente. Solo se l’utente è effettivamente seguito, la relazione viene eliminata dalla tabella seguito. Successivamente, si aggiornano i contatori num_follower e num_followed dei due utenti coinvolti per riflettere correttamente la modifica. In caso di successo viene restituito un messaggio di conferma, altrimenti un messaggio d’errore contestuale.
+
+
+====== GET/utente/search?query=string ======
+Questo endpoint serve per permettere agli utenti con accesso al sistema di cercare altri profili tramite lo username. La ricerca funziona grazie a un parametro di query chiamato query. Se questo parametro manca o viene lasciato vuoto, viene restituito un errore perché non ha senso avviare la ricerca senza sapere cosa cercare. Quando invece è presente e valido, il sistema interroga il database per cercare username che iniziano con la stringa inserita, ma escludendo l’utente che sta effettuando la ricerca. Il numero massimo di risultati restituiti è 10, in ordine alfabetico. Se la ricerca va a buon fine, i risultati vengono inviati nella risposta. In caso contrario, viene restituito un messaggio di errore generico.
+
+
+====== GET/followers ======
+Questo endpoint permette a un utente autenticato di ottenere l’elenco dei propri follower, ossia degli utenti che lo seguono. Una volta identificato l’utente tramite il token di autenticazione (req.user), viene eseguita una query sul database che unisce le tabelle seguito e utente per recuperare username e mail di chi segue l’utente corrente. I risultati sono ordinati alfabeticamente per username e restituiti come array JSON. Se si verifica un errore durante l’esecuzione della query, viene restituito un messaggio d’errore generico.
+
+
+====== GET/followed ======
+Questo endpoint restituisce all’utente autenticato l’elenco di tutti gli account che sta seguendo. Utilizzando lo username recuperato dal token, viene eseguita una query che unisce la tabella seguito con la tabella utente, in modo da ottenere username e mail di ciascun utente seguito. I risultati sono ordinati alfabeticamente per username e inviati al client in formato JSON. Se si verifica un errore durante l’esecuzione della query, viene restituito un messaggio d’errore generico con codice 500.
+
+
+====== POST/post ======
+Questo endpoint permette a un utente già autenticato di pubblicare un nuovo post, che può essere testuale oppure contenere un'immagine, ma non entrambi. Ho scelto questa modalità per rendere l’interfaccia più semplice e chiara da usare.
+
+Quando arriva una richiesta, prima di tutto recupero i dati: se c’è del testo o un file immagine. Controllo subito che non siano entrambi vuoti e che non ci siano entrambi nello stesso post, per rispettare la regola decisa. Un'altra cosa che ho voluto inserire è il controllo sul numero di post moderati: se l’utente ne ha avuti almeno tre negli ultimi 30 giorni, non può creare nuovi post.
+
+A quel punto, se l’utente ha inviato solo testo, salvo tutto nel database con il tipo “testo”. Se invece è un’immagine, controllo che sia in formato JPG e che non superi i 100 KB. Se tutto è a posto, salvo il file con un nome univoco nel sistema e registro i dati nel database con tipo “immagine”.
+
+Se qualcosa va storto – tipo un file non valido o un errore nella scrittura – il sistema restituisce un messaggio chiaro, così da aiutare l’utente a capire cosa è successo.
+
+
+====== DELETE/post ======
+Questo endpoint consente all’utente autenticato di eliminare un proprio post, identificato tramite l’ID fornito nel path. Per garantire la coerenza del sistema e la tracciabilità delle moderazioni, è stato stabilito che un post non può essere eliminato se è già stato moderato, anche se non è più visibile all’utente.
+
+Infatti, anche se il post moderato non compare più all’autore all’interno dell’interfaccia, potrebbe comunque ricordare o salvare l’ID e tentare di eliminarlo direttamente tramite una chiamata all’endpoint. Per questo motivo ho deciso di aggiungere un controllo esplicito sui campi mod_username, admin_username e data_moderazione: se uno di questi è valorizzato, la richiesta di eliminazione viene rifiutata.
+
+Dopo la validazione dell’ID e il recupero del post, viene verificato che l’utente autenticato sia effettivamente l’autore del post e che il post non sia stato oggetto di moderazione. Se tutti i controlli sono superati, il post viene rimosso dal database. Se conteneva un’immagine, è prevista anche la possibilità di rimuovere il file dal disco (opzionalmente).
+
+Eventuali errori, come ID non valido, post non trovato, tentativo di eliminazione non autorizzato o problemi nel database, vengono gestiti con risposte appropriate.
+
+
+====== GET/bacheca ======
+Ho realizzato questo endpoint per permettere all’utente autenticato di visualizzare la propria bacheca: una sorta di feed personale che raccoglie i post pubblicati sia dalle persone che segue sia da lui stesso. I contenuti sono ordinati dal più recente al meno recente e sono impaginati due alla volta. Per navigare tra le pagine, basta usare il parametro page.
+
+Nella progettazione ho tenuto conto del tipo di utente. Se chi accede è un moderatore o un amministratore, può vedere anche i post già moderati, con un’indicazione chiara sul fatto che siano stati oggetto di intervento. Al contrario, per gli utenti normali, questi post vengono nascosti: l’idea è di proteggere l’utente finale da contenuti segnalati o considerati inappropriati.
+
+Ogni post mostrato include l’autore, la sua immagine profilo, il contenuto (che può essere un testo o un’immagine), il numero di like e un’informazione importante: se l’utente ha già segnalato quel contenuto. Ho voluto che questa informazione — il campo flaggato — fosse visibile solo a chi ha fatto la segnalazione, in modo da tutelare la riservatezza del sistema di moderazione. Allo stesso tempo, questo mi permette di mostrare un riscontro visivo chiaro e utile all’utente, così da evitare segnalazioni duplicate sullo stesso post.
+
+
+====== POST/like/:id_post ======
+Questo endpoint permette all’utente autenticato di mettere "like" a un post identificato dal parametro id_post. Prima di procedere con l’inserimento del like, viene eseguita una serie di controlli fondamentali.
+
+Anzitutto, verifico che l’ID fornito sia un numero valido. In seguito, controllo che il post esista realmente nel database. Se il post non esiste, viene restituito un messaggio d’errore appropriato. Una volta accertata l’esistenza del post, verifico se il post è stato moderato: in tal caso, non è più possibile interagire con esso, quindi il like non viene consentito e viene restituito un errore.
+
+Se il post è valido e non moderato, verifico se l’utente ha già espresso un like, per evitare duplicazioni: il sistema non consente infatti di mettere like più di una volta allo stesso contenuto. Se il like non è ancora presente, viene inserito un nuovo record nella tabella mi_piace e viene incrementato il contatore di like associato al post.
+
+Questo meccanismo impedisce abusi e garantisce che ogni utente possa contribuire una sola volta al conteggio dei like, mantenendo l'integrità e la trasparenza delle interazioni social. Tutti i possibili errori, dalle operazioni di controllo fino all'inserimento e aggiornamento, sono gestiti in modo da restituire messaggi chiari e utili al client.
+
+
+====== DELETE/like/:id_post ======
+Questo endpoint permette all’utente autenticato di rimuovere un like precedentemente inserito su un determinato post. Dopo aver verificato che l’ID fornito sia un numero valido, viene controllata l’esistenza del post nel database. Se il post non esiste, viene restituito un errore specifico.
+
+Una volta confermata l’esistenza del post, viene verificato se esso è stato moderato: in tal caso, non è più possibile rimuovere il like, e l’operazione viene bloccata con un messaggio di errore dedicato. Questo vincolo assicura che i post moderati non possano più essere oggetto di interazioni.
+
+Se il post è valido e non moderato, si controlla che l’utente abbia effettivamente espresso un like per quel contenuto. In caso contrario, il sistema restituisce un messaggio di errore per evitare una rimozione non coerente.
+
+Se il like è presente, viene eliminato dalla tabella mi_piace, e il contatore di like del post viene decrementato di conseguenza. In questo modo si garantisce che il numero di like visualizzato sia sempre accurato e coerente con i dati reali. Tutti i possibili errori che possono emergere durante il processo sono gestiti con risposte chiare e informative rivolte al client.
+
+
+====== POST/flag/:id_post ======
+Questo endpoint consente a un utente autenticato di segnalare un post ritenuto inappropriato. Dopo aver verificato che l’ID del post sia valido e che il post esista nel sistema, controllo che l’utente non stia tentando di segnalare un proprio contenuto: le segnalazioni sono infatti pensate per identificare abusi da parte di altri utenti.
+
+Successivamente, viene controllato se il post è già stato moderato. In tal caso, la segnalazione non è più necessaria né consentita, e viene restituito un errore specifico. Questo vincolo impedisce di interagire ulteriormente con contenuti già sottoposti a interventi moderativi.
+
+Se il post è valido e non moderato, verifico che l’utente non abbia già segnalato lo stesso contenuto, poiché ogni utente può flaggare un determinato post una sola volta. Se tutte le condizioni sono soddisfatte, registro la segnalazione nella tabella flag.
+
+Questo sistema aiuta i moderatori a individuare i contenuti problematici, mantenendo allo stesso tempo un controllo coerente sul numero e la provenienza delle segnalazioni. Eventuali errori durante il processo vengono gestiti restituendo risposte significative al client.
+
+
+====== DELETE/flag/:id_post ======
+Questo endpoint permette a un utente autenticato di rimuovere una segnalazione (flag) fatta in precedenza su un post. Dopo aver controllato che l’ID fornito sia valido e che il post esista, si verifica se il post è già stato moderato. In tal caso, la segnalazione non può più essere rimossa e viene restituito un messaggio di errore.
+
+Questo serve a evitare modifiche su contenuti già gestiti dalla moderazione, mantenendo coerenza e tracciabilità.
+
+Se il post non risulta moderato, viene controllato se l’utente ha effettivamente segnalato quel contenuto. Se non ci sono segnalazioni da parte sua, l’operazione non va a buon fine.
+
+Se invece la segnalazione esiste, viene eliminata dalla tabella `flag`. Questo consente all’utente di cambiare idea o correggere un errore. Come per gli altri endpoint, ogni errore viene gestito con risposte semplici e comprensibili.
+
+
+====== GET/moderazione/flag ======
+Per gestire meglio i contenuti problematici, ho deciso di creare un endpoint che restituisce l’elenco dei post segnalati ma ancora non moderati. Prima di mostrare qualsiasi informazione, viene controllato che chi effettua la richiesta sia effettivamente un moderatore oppure un amministratore, perché volevo assicurarmi che solo chi ha i giusti permessi potesse vedere questi dati delicati.
+
+Una volta verificato il ruolo, l’endpoint recupera dal database i post che hanno ricevuto almeno una segnalazione e che non sono stati ancora moderati. Per ogni post viene conteggiato il numero di flag ricevuti, e i risultati vengono ordinati a partire da quelli più segnalati. In questo modo, chi si occupa della moderazione può concentrarsi prima sui contenuti potenzialmente più gravi e agire più rapidamente.
+
+
+====== PATCH/moderazione/:id_post ======
+Questo endpoint serve a permettere la moderazione di un post segnalato, ma solo da parte di chi ha realmente l’autorità per farlo: un moderatore o un amministratore. La prima cosa che ho voluto implementare è proprio il controllo dei permessi, perché non sarebbe corretto lasciare accesso a chiunque.
+
+Superato questo controllo, verifico che il post esista, che non sia già stato moderato in passato e, cosa fondamentale, che sia stato effettivamente segnalato. Ho scelto di inserire quest’ultimo vincolo per evitare che vengano moderati contenuti senza motivo, solo perché qualcuno ha accesso ai privilegi.
+
+Se tutto è in regola, la moderazione viene registrata salvando la data e il nome di chi l’ha effettuata. In questo modo ogni intervento resta tracciabile, e si previene la possibilità che un post venga moderato più volte o da persone diverse in parallelo.
+
+
+====== GET/moderazione/post ======
+Con questo endpoint ho voluto dare ai moderatori e agli amministratori la possibilità di consultare tutti i post che sono già stati moderati. Prima di eseguire qualsiasi operazione, controllo che l’utente autenticato abbia effettivamente uno di questi ruoli, così da proteggere l’accesso a queste informazioni.
+
+Se i permessi sono corretti, il sistema esegue una query che recupera tutti i post la cui moderazione è stata completata, ordinandoli a partire da quello più recente. Per ogni post, ho deciso di includere sia i dati base (come il contenuto, la data e l’autore), sia le informazioni relative alla moderazione: chi l’ha effettuata e quando. In questo modo, chi si occupa della gestione dei contenuti può tenere traccia facilmente degli interventi già fatti, mantenendo ordine, trasparenza e coerenza con i ruoli previsti dal sistema.
+
+
+====== GET/utente/:username ======
+Questo endpoint consente di visualizzare il profilo pubblico di un utente, includendo le sue informazioni di base e i post che ha pubblicato, purché non siano stati moderati. Dopo aver verificato la validità del parametro username, viene eseguita una prima query per ottenere i dati dell’utente: nome, email, immagine di profilo, numero di follower e numero di seguiti.
+
+Se l’utente esiste, viene eseguita una seconda query per recuperare i suoi post, ordinati per data decrescente. Sono esclusi i post moderati (quindi quelli con mod_username, admin_username o data_moderazione non nulli), in quanto non più visibili pubblicamente. I dati vengono poi restituiti in un oggetto che unisce il profilo e la lista dei post.
+
+Questo approccio consente a qualunque utente autenticato di esplorare i profili degli altri, ma nel rispetto delle regole di visibilità previste per i contenuti moderati.
