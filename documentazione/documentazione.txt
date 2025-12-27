@@ -1,9 +1,5 @@
 DOCUMENTAZIONE PER IL PROGETTO "FOTOGRAM"
 
-	• Studentessa: Giulia Martina Colombo
-	• Matricola: 42601A
-
-
 ================================
    PROGETTAZIONE CONCETTUALE
 ================================
@@ -1713,5 +1709,6 @@ Se i permessi sono corretti, il sistema esegue una query che recupera tutti i po
 Questo endpoint consente di visualizzare il profilo pubblico di un utente, includendo le sue informazioni di base e i post che ha pubblicato, purché non siano stati moderati. Dopo aver verificato la validità del parametro username, viene eseguita una prima query per ottenere i dati dell’utente: nome, email, immagine di profilo, numero di follower e numero di seguiti.
 
 Se l’utente esiste, viene eseguita una seconda query per recuperare i suoi post, ordinati per data decrescente. Sono esclusi i post moderati (quindi quelli con mod_username, admin_username o data_moderazione non nulli), in quanto non più visibili pubblicamente. I dati vengono poi restituiti in un oggetto che unisce il profilo e la lista dei post.
+
 
 Questo approccio consente a qualunque utente autenticato di esplorare i profili degli altri, ma nel rispetto delle regole di visibilità previste per i contenuti moderati.
